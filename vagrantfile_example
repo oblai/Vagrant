@@ -1,0 +1,80 @@
+Vagrant.configure("2") do |config|
+
+# ------- nginx -------
+    config.vm.define "nginx" do |nginx|
+        nginx.vm.hostname = "nginx"
+        nginx.vm.box = "ubuntu/focal64" # ubuntu 20.04
+        nginx.vm.network "public_network", bridge: "Intel(R) Wi-Fi 6 AX200 160MHz"
+        nginx.vm.network :forwarded_port, guest: 22, host: 2201, id: 'ssh'
+        # Директории которые будут синхронизироваться между локальным компьютером и виртуалкой.
+        # nginx.vm.synced_folder "D:/Work/sites/vagrant_test", "/var/www/vagrant_test"
+        
+        # nginx.disksize.size = "30GB"
+        nginx.vm.provider "virtualbox" do |vb|
+            vb.name = "nginx"
+            vb.cpus = 2
+            vb.memory = "2048"
+        end
+          
+        nginx.vm.provision "shell", inline: $script
+        nginx.vm.provision "shell", inline: <<-SHELL
+            sudo apt upgrade -y
+        SHELL
+    end
+end
+
+# script
+$script = <<-SCRIPT
+    sudo apt update -y
+SCRIPT
+
+
+
+
+
+--------------------------------------------------
+"ubuntu/bionic64" # Ubuntu 18.04
+"ubuntu/focal64" # Ubuntu 20.04
+"ubuntu/jammy64" # Ubuntu 22.04
+"generic/debian9" # Debian 9
+"debian/buster64" # Debian 10
+"debian/bullseye64" # Debian 11
+"debian/bookworm64" # Debian 12
+"centos/7" # CentOS 7
+"centos/8" # CentOS 8
+"generic/centos9s" # CentOS 9
+"danilapog/astra2-12" # Astra 2.12.45
+"danilapog/astralinux" # Astra orel 2.12.40
+"tectep/redos73" # RedOS 7.3.3
+"generic/fedora28" # Fedora 28
+"generic/rhel8" # RHEL 8
+"generic/rhel9" # RHEL 9
+"BaseALT/alt-server-9-x86_64" # ALT Linux Server 9 (20190704-alpha1 для x86_64)
+
+
+
+# Чтобы установить модули для vagrant на версии выше 2.3.4 (у vagrant), нужно указать источник этот сайт
+	vagrant plugin install --plugin-clean-sources --plugin-source https://rubygems.org vagrant-disksize
+
+# установить модуль для hyper-v
+    vagrant plugin install --plugin-clean-sources --plugin-source https://rubygems.org VagrantHyperV
+
+# resize диска
+	Запустите sudo cfdisk /dev/sda
+	Используйте стрелки, чтобы выбрать ваш диск, возможно, sdaX. У меня была СДА3.
+	Затем выберите изменение размера с помощью клавиш со стрелками. Примите предложенный размер диска.
+	Затем выберите «Написать». И ответьте да.
+	Вы можете выбрать «Выйти сейчас».
+
+		Запустите sudo resize2fs -p -F /dev/sda1. Вы должны увидеть что-то вроде: «Файловая система /dev/sda3 смонтирована на /; требуется оперативное изменение размера old_desc_blocks = 4, new_desc_blocks = 6 Файловая система на /dev/sda3 теперь Длина 11933952 (4k) блоков».
+		Если XFS файловая система, то - xfs_growfs /dev/sda1 (узнать фс - file -s /dev/sda1)
+	Запустите df и увидите, что размер вашего диска увеличился
+
+
+
+
+# centos проблема с репозиторием appstream
+cd /etc/yum.repos.d/
+sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+yum update -y
